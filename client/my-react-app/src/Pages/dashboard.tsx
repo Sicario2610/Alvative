@@ -43,7 +43,7 @@ function Dashboard() {
     try {
       // Step 1: Call backend to initialize payment
       const response = await axios.post(
-        `https://test-assessment-kiy5.onrender.com/initialize-payment`,
+        `https://test-assessment-l5nu.onrender.com/initialize-payment`,
         {
           email: userEmail,
           name: selectedItem.name,
