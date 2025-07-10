@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const html_to_text_1 = __importDefault(require("html-to-text"));
+const html_to_text_1 = require("html-to-text");
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -34,12 +34,13 @@ class Email {
     }
     send(subject, message) {
         return __awaiter(this, void 0, void 0, function* () {
+            const textContent = (0, html_to_text_1.convert)(message);
             const mailOptions = {
                 from: this.from,
                 to: this.to,
                 subject,
                 html: message,
-                text: html_to_text_1.default.convert(message),
+                text: textContent,
             };
             yield this.newTransport().sendMail(mailOptions);
         });
