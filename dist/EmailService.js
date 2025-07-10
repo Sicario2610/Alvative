@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const html_to_text_1 = require("html-to-text");
-const nodemailer_1 = __importDefault(require("nodemailer"));
+const axios_1 = __importDefault(require("axios"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 class Email {
@@ -21,28 +21,32 @@ class Email {
         this.to = user.email;
         this.firstName = user.name.split(" ")[0];
         this.url = url;
-        this.from = `Abdulbasit Abdulrasheed <${process.env.EMAIL_FROM}>`;
-    }
-    newTransport() {
-        return nodemailer_1.default.createTransport({
-            service: "gmail",
-            auth: {
-                user: process.env.EMAIL_FROM,
-                pass: process.env.GMAIL_PASSWORD,
-            },
-        });
+        this.from = process.env.EMAIL_FROM;
     }
     send(subject, message) {
         return __awaiter(this, void 0, void 0, function* () {
             const textContent = (0, html_to_text_1.convert)(message);
-            const mailOptions = {
-                from: this.from,
-                to: this.to,
+            const payload = {
+                from: {
+                    email: this.from,
+                    name: "Abdulbasit Abdulrasheed",
+                },
+                to: [
+                    {
+                        email: this.to,
+                        name: this.firstName,
+                    },
+                ],
                 subject,
                 html: message,
                 text: textContent,
             };
-            yield this.newTransport().sendMail(mailOptions);
+            yield axios_1.default.post("https://api.mailersend.com/v1/email", payload, {
+                headers: {
+                    Authorization: `Bearer ${process.env.MAILERSEND_API_KEY}`,
+                    "Content-Type": "application/json",
+                },
+            });
         });
     }
     sendReceipt(amount, reference) {
@@ -59,10 +63,10 @@ class Email {
     sendFailed(amount, reference) {
         return __awaiter(this, void 0, void 0, function* () {
             const message = `
-          <p>Hi ${this.firstName},</p>
-          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
-          <p>Thanks for patronizing Alvative Watches.</p>
-        `;
+      <p>Hi ${this.firstName},</p>
+      <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
+      <p>Thanks for patronizing Alvative Watches.</p>
+    `;
             yield this.send("Payment failed ⚠️", message);
         });
     }

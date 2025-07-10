@@ -3,7 +3,7 @@ import axios from "axios";
 import dotenv from "dotenv";
 import cors from "cors";
 import crypto from "crypto";
-import Email from "./EmailService";
+import { sendSMS, sendWhatsApp } from "./notification";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -27,6 +27,8 @@ interface PaymentRequest {
   email: string;
   name: string;
   price: number;
+  image: string; // Add image property
+  phone: string; // Add phone property
 }
 
 // Interface for Paystack response
@@ -44,13 +46,13 @@ interface PaystackInitializeResponse {
 app.post(
   "/initialize-payment",
   async (req: Request<{}, {}, PaymentRequest>, res: Response) => {
-    const { email, name, price } = req.body;
+    const { email, name, price, image, phone } = req.body; // Destructure image and phone
 
     // Validate request body
-    if (!email || !name || !price || price <= 0) {
+    if (!email || !name || !price || price <= 0 || !image || !phone) {
       return res
         .status(400)
-        .json({ error: "Email, name, and valid price are required" });
+        .json({ error: "Email, name, valid price, image, and phone are required" });
     }
 
     // Validate email format
@@ -69,11 +71,17 @@ app.post(
           currency: "NGN",
           metadata: {
             item_name: name,
+            item_image: image, // Add image to metadata
             custom_fields: [
               {
                 display_name: "Item",
                 variable_name: "item_name",
                 value: name,
+              },
+              {
+                display_name: "Item Image",
+                variable_name: "item_image",
+                value: image,
               },
             ],
           },
@@ -105,60 +113,60 @@ app.post(
 );
 
 // Endpoint for payment verification
-app.get("/verify-payment/:reference", async (req: Request, res: Response) => {
-  const { reference } = req.params;
+// app.get("/verify-payment/:reference", async (req: Request, res: Response) => {
+//   const { reference } = req.params;
 
-  if (!reference) {
-    return res.status(400).json({ error: "Payment reference is required" });
-  }
+//   if (!reference) {
+//     return res.status(400).json({ error: "Payment reference is required" });
+//   }
 
-  try {
-    const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        },
-      }
-    );
+//   try {
+//     const response = await axios.get(
+//       `https://api.paystack.co/transaction/verify/${reference}`,
+//       {
+//         headers: {
+//           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+//         },
+//       }
+//     );
 
-    const { data } = response.data;
+//     const { data } = response.data;
 
-    if (data.status === "success") {
-      // Payment was successful
-      console.log("Payment verified successfully:", data);
+//     if (data.status === "success") {
+//       // Payment was successful
+//       console.log("Payment verified successfully:", data);
 
-      res.status(200).json({
-        status: true,
-        message: "Payment verified successfully",
-        data: {
-          reference: data.reference,
-          amount: data.amount / 100, // Convert back to Naira
-          currency: data.currency,
-          status: data.status,
-          customer: data.customer,
-          metadata: data.metadata,
-        },
-      });
-    } else {
-      res.status(400).json({
-        status: false,
-        message: "Payment verification failed",
-        data: data,
-      });
-    }
-  } catch (error: any) {
-    console.error(
-      "Payment verification error:",
-      error.response?.data || error.message
-    );
-    res.status(500).json({
-      status: false,
-      error: "Failed to verify payment",
-      message: error.response?.data?.message || "Payment verification failed",
-    });
-  }
-});
+//       res.status(200).json({
+//         status: true,
+//         message: "Payment verified successfully",
+//         data: {
+//           reference: data.reference,
+//           amount: data.amount / 100, // Convert back to Naira
+//           currency: data.currency,
+//           status: data.status,
+//           customer: data.customer,
+//           metadata: data.metadata,
+//         },
+//       });
+//     } else {
+//       res.status(400).json({
+//         status: false,
+//         message: "Payment verification failed",
+//         data: data,
+//       });
+//     }
+//   } catch (error: any) {
+//     console.error(
+//       "Payment verification error:",
+//       error.response?.data || error.message
+//     );
+//     res.status(500).json({
+//       status: false,
+//       error: "Failed to verify payment",
+//       message: error.response?.data?.message || "Payment verification failed",
+//     });
+//   }
+// });
 
 // Webhook endpoint for Paystack
 app.post("/webhook/paystack", (req: Request, res: Response) => {
@@ -176,18 +184,16 @@ app.post("/webhook/paystack", (req: Request, res: Response) => {
         (async () => {
           try {
             console.log("Webhook: Payment successful", event.data);
-
             const customer = event.data.customer;
             const amount = event.data.amount / 100;
             const reference = event.data.reference;
 
-            const user = {
-              name: customer.first_name || "Customer",
-              email: customer.email,
-            };
+            const customerPhone = event.data.customer.phone || ""; // Get phone from Paystack event data
+            const phone = customerPhone || "+2348012345678"; // Fallback to default if not available
 
-            const email = new Email(user);
-            await email.sendReceipt(amount, reference);
+            const message = `🎉 Payment of ₦${amount} successful!\nRef: ${reference}\nThanks for using Alvative Watches.`;
+
+            await sendSMS(phone, message);
           } catch (err) {
             console.error("Email send error:", err);
           }

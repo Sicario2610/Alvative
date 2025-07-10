@@ -10,10 +10,12 @@ import "react-toastify/dist/ReactToastify.css";
 function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [userPhone, setUserPhone] = useState(""); // New state for phone number
   const [selectedItem, setSelectedItem] = useState<{
     id: number;
     price: number;
     name: string;
+    image: string; // Add image property to selectedItem type
   } | null>(null);
 
   const items = [
@@ -31,6 +33,7 @@ function Dashboard() {
     id: number;
     price: number;
     name: string;
+    image: string; // Add image property to item type
   }) => {
     setSelectedItem(item);
     setIsModalOpen(true);
@@ -43,11 +46,13 @@ function Dashboard() {
     try {
       // Step 1: Call backend to initialize payment
       const response = await axios.post(
-        `https://test-assessment-l5nu.onrender.com/initialize-payment`,
+        `${import.meta.env.VITE_BASE_URL}/initialize-payment`,
         {
           email: userEmail,
           name: selectedItem.name,
           price: selectedItem.price,
+          image: selectedItem.image, // Ensure image is sent
+          phone: userPhone, // Add phone number to the request
         }
       );
 
@@ -60,6 +65,15 @@ function Dashboard() {
         email: userEmail,
         amount: selectedItem.price * 100, // Convert to kobo
         reference,
+        metadata: {
+          custom_fields: [
+            {
+              display_name: "Phone Number",
+              variable_name: "phone",
+              value: userPhone,
+            },
+          ],
+        },
         onSuccess: (transaction) => {
           // Handle successful payment
           console.log("Payment successful:", transaction);
@@ -126,6 +140,8 @@ function Dashboard() {
         onEmailChange={setUserEmail}
         onClose={() => setIsModalOpen(false)}
         onProceed={handleBuy}
+        userPhone={userPhone} // Pass userPhone to EmailModal
+        onUserPhoneChange={setUserPhone} // Pass setter to EmailModal
       />
       <ToastContainer />
     </div>
