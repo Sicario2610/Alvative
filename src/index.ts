@@ -112,62 +112,6 @@ app.post(
   }
 );
 
-// Endpoint for payment verification
-// app.get("/verify-payment/:reference", async (req: Request, res: Response) => {
-//   const { reference } = req.params;
-
-//   if (!reference) {
-//     return res.status(400).json({ error: "Payment reference is required" });
-//   }
-
-//   try {
-//     const response = await axios.get(
-//       `https://api.paystack.co/transaction/verify/${reference}`,
-//       {
-//         headers: {
-//           Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-//         },
-//       }
-//     );
-
-//     const { data } = response.data;
-
-//     if (data.status === "success") {
-//       // Payment was successful
-//       console.log("Payment verified successfully:", data);
-
-//       res.status(200).json({
-//         status: true,
-//         message: "Payment verified successfully",
-//         data: {
-//           reference: data.reference,
-//           amount: data.amount / 100, // Convert back to Naira
-//           currency: data.currency,
-//           status: data.status,
-//           customer: data.customer,
-//           metadata: data.metadata,
-//         },
-//       });
-//     } else {
-//       res.status(400).json({
-//         status: false,
-//         message: "Payment verification failed",
-//         data: data,
-//       });
-//     }
-//   } catch (error: any) {
-//     console.error(
-//       "Payment verification error:",
-//       error.response?.data || error.message
-//     );
-//     res.status(500).json({
-//       status: false,
-//       error: "Failed to verify payment",
-//       message: error.response?.data?.message || "Payment verification failed",
-//     });
-//   }
-// });
-
 // Webhook endpoint for Paystack
 app.post("/webhook/paystack", (req: Request, res: Response) => {
   const hash = crypto
@@ -181,23 +125,7 @@ app.post("/webhook/paystack", (req: Request, res: Response) => {
     switch (event.event) {
       case "charge.success":
         console.log("Webhook: Payment successful", event.data);
-        (async () => {
-          try {
-            console.log("Webhook: Payment successful", event.data);
-            const customer = event.data.customer;
-            const amount = event.data.amount / 100;
-            const reference = event.data.reference;
-
-            const customerPhone = event.data.customer.phone || ""; // Get phone from Paystack event data
-            const phone = customerPhone || "+2348012345678"; // Fallback to default if not available
-
-            const message = `🎉 Payment of ₦${amount} successful!\nRef: ${reference}\nThanks for using Alvative Watches.`;
-
-            await sendSMS(phone, message);
-          } catch (err) {
-            console.error("Email send error:", err);
-          }
-        })();
+       
         break;
 
       case "charge.dispute.create":
