@@ -56,10 +56,9 @@ export default class Email {
   async sendFailed(amount: number, reference: string) {
     const message = `
           <p>Hi ${this.firstName},</p>
-          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> is successful.</p>
-          <p>Expect delivery in a few days!</p>
+          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
           <p>Thanks for patronizing Alvative Watches.</p>
         `;
-    await this.send("Payment Confirmed 🎉✅", message);
+    await this.send("Payment failed ⚠️", message);
   }
 }

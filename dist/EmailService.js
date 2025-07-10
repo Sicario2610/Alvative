@@ -60,11 +60,10 @@ class Email {
         return __awaiter(this, void 0, void 0, function* () {
             const message = `
           <p>Hi ${this.firstName},</p>
-          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> is successful.</p>
-          <p>Expect delivery in a few days!</p>
+          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
           <p>Thanks for patronizing Alvative Watches.</p>
         `;
-            yield this.send("Payment Confirmed 🎉✅", message);
+            yield this.send("Payment failed ⚠️", message);
         });
     }
 }
