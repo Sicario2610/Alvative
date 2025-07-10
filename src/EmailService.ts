@@ -1,5 +1,5 @@
 import { convert } from "html-to-text";
-import nodemailer from "nodemailer";
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -18,30 +18,34 @@ export default class Email {
     this.to = user.email;
     this.firstName = user.name.split(" ")[0];
     this.url = url;
-    this.from = `Abdulbasit Abdulrasheed <${process.env.EMAIL_FROM}>`;
-  }
-
-  newTransport() {
-    return nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.EMAIL_FROM,
-        pass: process.env.GMAIL_PASSWORD,
-      },
-    });
+    this.from = process.env.EMAIL_FROM!;
   }
 
   async send(subject: string, message: string) {
     const textContent = convert(message);
-    const mailOptions = {
-      from: this.from,
-      to: this.to,
+
+    const payload = {
+      from: {
+        email: this.from,
+        name: "Abdulbasit Abdulrasheed",
+      },
+      to: [
+        {
+          email: this.to,
+          name: this.firstName,
+        },
+      ],
       subject,
       html: message,
       text: textContent,
     };
 
-    await this.newTransport().sendMail(mailOptions);
+    await axios.post("https://api.mailersend.com/v1/email", payload, {
+      headers: {
+        Authorization: `Bearer ${process.env.MAILERSEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+    });
   }
 
   async sendReceipt(amount: number, reference: string) {
@@ -53,12 +57,13 @@ export default class Email {
     `;
     await this.send("Payment Confirmed 🎉✅", message);
   }
+
   async sendFailed(amount: number, reference: string) {
     const message = `
-          <p>Hi ${this.firstName},</p>
-          <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
-          <p>Thanks for patronizing Alvative Watches.</p>
-        `;
+      <p>Hi ${this.firstName},</p>
+      <p>Your order of amount <strong>₦${amount}</strong> with reference <strong>${reference}</strong> failed.</p>
+      <p>Thanks for patronizing Alvative Watches.</p>
+    `;
     await this.send("Payment failed ⚠️", message);
   }
 }
