@@ -1,4 +1,4 @@
-import htmlToText from "html-to-text";
+import { compile } from "html-to-text";
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
 dotenv.config();
@@ -32,12 +32,13 @@ export default class Email {
   }
 
   async send(subject: string, message: string) {
+    const textContent = compile()(message);
     const mailOptions = {
       from: this.from,
       to: this.to,
       subject,
       html: message,
-      text: htmlToText.convert(message),
+      text: textContent,
     };
 
     await this.newTransport().sendMail(mailOptions);
